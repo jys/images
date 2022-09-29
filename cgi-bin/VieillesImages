@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+__author__ = "jys"
+__copyright__ = "Copyright (C) 2022 LATEJCON"
+
+from os import path, environ
+import datetime
+import cgi
+import re
+import subprocess
+import cgitb
+from ViRecherche import ViRecherche
+cgitb.enable()
+#cgitb.enable(display=0, logdir="/path/to/logdir")
+
+# L'en-tête qui va bien
+print("Content-Type: text/html")
+print()
+#print(path.abspath(path.curdir))
+
+form = cgi.FieldStorage()
+#print(form)
+# un dejtail d'implantation que je n'ai pas compris
+if path.abspath(path.curdir).endswith('jys/Boa/imagesRV'): 
+    ressources = 'ressources/'     #local
+else: 
+    ressources = '../ressources/'               # canap de Dom
+        
+# rejcupejration des ejvejnements et des sauvegardes
+premiehreFois = 'latejcon' not in form
+#modedEmploi = ('modedEmploi' in form) ^ ('avecModedEmploi' in form)
+modedEmploi = ('modedEmploi' in form) ^ ('sansModedEmploi' not in form)
+rechercher = form.getvalue('ça')
+if rechercher: texteRecherchej = form.getvalue('texteRecherchej')
+else: texteRecherchej = form.getvalue('svtexteRecherchej') or ''
+lesUrls = form.getlist('lesUrls') or []
+laLejgende = form.getvalue('laLejgende')
+clicImage = ''
+for clef in form.keys():
+    m = re.match("IMG([0-9]*)\.x", clef)
+    if m is None: continue
+    clicImage = m.group(1)
+etc = 'avecEtc' in form
+
+# premiehre fois 
+if premiehreFois:
+    viRecherche = ViRecherche(ressources + 'RV')
+    lesUrls, etc = viRecherche.rechercheUrlsParIds([i for i in range(1,16)])
+    viRecherche.close()
+    laLejgende = ''
+    mparny = True
+else:
+    mparny = '3000/Parny' in lesUrls[0]
+
+# recherche
+if rechercher:
+    # teste si mot de passe ok
+    if mparny:
+        # pas ok, teste la recherche
+        mparny = texteRecherchej.lower() != 'la construction de la tour eiffel'
+    if not mparny:
+        viRecherche = ViRecherche(ressources + 'RV')
+        lesUrls, etc = viRecherche.rechercheUrlsParTexte(texteRecherchej)
+        viRecherche.close()
+    laLejgende = ''
+
+# clic image
+if clicImage:
+    # rejordonne les vignettes
+    index = int(clicImage)
+    lesUrls = lesUrls[index:] + lesUrls[:index]
+    # trouve la lejgende
+    m = re.match("([0-9]*);.*", lesUrls[0])
+    identDoc = m.group(1)
+    laLejgende = subprocess.getoutput(f'grep "^{identDoc}\." {ressources + "RV-Corpus.txt"}').replace('"', '&quot;')
+    
+# la trace
+if premiehreFois or rechercher:
+    fichierTrace = path.join(path.dirname(path.realpath(__file__)), '..', 'ressources/traces.csv')
+    timbreDeTemps = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    if 'REMOTE_ADDR' in environ: adrIp = environ['REMOTE_ADDR']
+    else: adrIp = ''
+    if 'REMOTE_PORT' in environ: port = environ['REMOTE_PORT']
+    else: port = ''
+    if 'HTTP_USER_AGENT' in environ: agent = environ['HTTP_USER_AGENT']
+    else: environ = ''
+    with open(fichierTrace, 'a') as trace:
+        trace.write(f'{timbreDeTemps} | {adrIp} | {port} | {agent} | {texteRecherchej} | \n')
+
+
+# l'en-teste
+print("""
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+    <title>vieilles images</title>
+    <link rel="icon" type="image/png" href="../ressources/faviconLaR2.png"/>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+    .ta1 { width:100%; height:400px; overflow:auto; font-size: 16pt; color:darkgreen; font-family: Tahoma, sans-serif; background-color: White; } 
+    .ta2 { width:100%; height:400px; overflow:auto; font-size: 16pt; color:darkred; font-family: Tahoma, sans-serif; background-color: lightgrey; } 
+    .ta3 { width:100%; height:400px; overflow:auto; font-size: 16pt; color:darkblue; font-family: Tahoma, sans-serif; background-color: lightgrey; } 
+    a:link { text-decoration:none; } 
+    sti { color:black;  font-size: 35pt; margin: 0%%; font-weight:normal; font-style: italic;}
+    mi1, .mi1 { color:black; font-size: 16pt; margin: 0%%; font-weight:normal; }
+    mi2, .mi2 { color:darkred; font-size: 16pt; margin: 0%%; font-weight:normal; }
+    mi3, .mi3 { color:darkgreen; font-size: 16pt; margin: 0%%; font-weight:normal; }
+    mi4, .mi4 { color:black; font-size: 16pt; margin: 0%%; font-weight:bold; }
+    mi5, .mi5 { color:darkred }
+    mi6, .mi6 { color:darkgreen }
+    mi7, .mi7 { color:darkblue }
+    mi8, .mi8 { color:darkblue; font-size: 16pt; margin: 0%%; font-weight:normal; }
+    #af1 {margin-top: 20px; margin-bottom: 20px; margin-right: 100px; margin-left: 50px; background-color: White; }
+    #af2 {margin-top: 20px; margin-bottom: 20px; margin-right: 100px; margin-left: 100px; background-color: White; }
+    #af3 {margin-top: 20px; margin-bottom: 20px; margin-right: 100px; margin-left: 50px; background-color: White; }
+    button {padding: 0; border: none; background: none;}
+    .td1 { padding: 15px; font-size: 120%; }
+    </style>
+    </head>
+    """)
+# le titre
+print("""
+    <body>
+    <img alt="../ressources/vieillesImages-100D.png" src="../ressources/vieillesImages-100D.png"  style="float:right;"/>    
+    <form action="VieillesImages" method="post">
+    <table><tr><td><img src="../ressources/echiquierLatejcon4-200T.png"/></td><td><sti>et les vieilles images</sti></td></tr></table>
+    """)
+# la recherche
+print(f"""
+    <div id="af1">
+    <p class="mi3">
+    <mil>Que cherchez-vous ? </mi1>&nbsp;&nbsp;
+    <input type="text" name="texteRecherchej" value="{texteRecherchej}" style="font-size: 16pt"/>
+    <input type="submit" name="ça" value="ça" style="font-size: 16pt"/>
+    </p>
+    </div>
+    """)
+
+# le mode d'emploi
+print("""
+    <div id="af3">
+    <input type="submit" name="modedEmploi" value="mode d'emploi" style="font-size: 10pt"/>
+    """)
+if modedEmploi:
+    if mparny:
+        print("""
+            <i>Pour masquer ce mode d'emploi, cliquez sur le bouton <b>mode d'emploi</b>.</i>
+            <br/>Les vieilles images ne sont pas publiques. Pour les voir, il faut une clef et une
+            serrure (un mot de passe et l'endroit où le mettre)... C'est pas gagné. Vous pouvez quand
+            mesme demander à ivo@latejcon.art... Mais Ivo a mauvais caractehre, il faut estre diplomate...
+            <br/>Mais, comme consolation, comme compensation, vous avez quelques images de notre ejditeur Parny.
+            """)
+    else:
+        print("""
+            <i>Pour masquer ce mode d'emploi, cliquez sur le bouton <b>mode d'emploi</b>.</i>
+            <br/>Vous avez accehs aux vieilles images. 
+            <br/>Attention, l'analyse du texte de recherche est sommaire. Il n'y a pas d'analyse syntaxique ni 
+            mesme morphologique. 
+            <br/><b>Faites simple</b>. Pour les noms propres, mettez des majuscules (par exemple "Karl Marx"). Si vous cherchez plusieurs mots, seules les images qui ont tous les mots apparaistront (par exemple "marxisme allemand" sortira les images marquejes "marxisme" et "allemand").
+            <br/>Cliquez sur une vignette pour voir l'image et sa lejgende.
+            """)
+        
+print('</div>')
+
+# l'image et la lejgende
+if laLejgende:
+    m = re.match("[0-9]*;(.*)", lesUrls[0])
+    image = m.group(1)
+    print(f"""
+        <table><tr><td>
+        <img src="../400x400/{image}" alt="../400x400/{image}"/>
+        </td><td class="td1">{laLejgende}</td></tr></table>
+        """)
+   
+# les vignettes
+compt = 0
+for url in lesUrls:
+    # 109400141;1608/10940-141.jpg
+    m = re.match("[0-9]*;(.*)", url)
+    vignette = m.group(1)
+    print(f"""
+        <input type="image" name="IMG{compt}" src="../vignettes/{vignette}" alt="../vignettes/{vignette}"/>
+        """) 
+    compt +=1
+if etc: print('<img src="../vignettes/etc.jpg" alt="../vignettes/etc.jpg"/>')
+    
+# passage de l'ejtat
+print('<input type="hidden" name="latejcon" value="1"/>')
+if not modedEmploi: print('<input type="hidden" name="sansModedEmploi" value="1"/>')
+#if modedEmploi: print('<input type="hidden" name="avecModedEmploi" value="1"/>')
+if texteRecherchej: print(f'<input type="hidden" name="svtexteRecherchej" value="{texteRecherchej}"/>')
+if laLejgende : print(f'<input type="hidden" name="laLejgende" value="{laLejgende}"/>')
+for url in lesUrls: print(f'<input type="hidden" name="lesUrls" value="{url}"/>')
+if etc: print('<input type="hidden" name="avecEtc" value="1"/>')
+
+
+print('</form></body></html>')
