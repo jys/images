@@ -49,6 +49,8 @@ if premiehreFois:
     viRecherche.close()
     laLejgende = ''
     mparny = True
+elif len(lesUrls) == 0:
+    mparny = False
 else:
     mparny = '3000/Parny' in lesUrls[0]
 
@@ -182,7 +184,15 @@ for url in lesUrls:
         """) 
     compt +=1
 if etc: print('<img src="../vignettes/etc.jpg" alt="../vignettes/etc.jpg"/>')
-    
+if len(lesUrls) == 0: 
+    print(f"""
+        <div id="af1">
+        <p class="mi3">
+        <mil>Rien trouvé, dejsolé. </mi1>
+        </p>
+        </div>
+        """)    
+        
 # passage de l'ejtat
 print('<input type="hidden" name="latejcon" value="1"/>')
 if not modedEmploi: print('<input type="hidden" name="sansModedEmploi" value="1"/>')

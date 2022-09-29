@@ -90,7 +90,7 @@ class ViRecherche:
             if etOk : idsDocs &= idsDocsMot
             else: idsDocs = idsDocsMot
             etOk = True
-        if not etOk: idsDocs = []
+        if not etOk: idsDocs = set()
         # recherche avec tous les mots concatejnejs
         idsDocs |= self.__rechercheParMot('_'.join(mots))
         return list(idsDocs)
