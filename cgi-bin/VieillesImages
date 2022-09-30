@@ -9,9 +9,10 @@ import cgi
 import re
 import subprocess
 import cgitb
+from hashlib import blake2b
 from ViRecherche import ViRecherche
-cgitb.enable()
-#cgitb.enable(display=0, logdir="/path/to/logdir")
+#cgitb.enable()
+cgitb.enable(display=0, logdir="logdir")
 
 # L'en-tête qui va bien
 print("Content-Type: text/html")
@@ -31,7 +32,7 @@ premiehreFois = 'latejcon' not in form
 #modedEmploi = ('modedEmploi' in form) ^ ('avecModedEmploi' in form)
 modedEmploi = ('modedEmploi' in form) ^ ('sansModedEmploi' not in form)
 rechercher = form.getvalue('ça')
-if rechercher: texteRecherchej = form.getvalue('texteRecherchej')
+if rechercher: texteRecherchej = form.getvalue('texteRecherchej') or ''
 else: texteRecherchej = form.getvalue('svtexteRecherchej') or ''
 lesUrls = form.getlist('lesUrls') or []
 laLejgende = form.getvalue('laLejgende')
@@ -55,11 +56,13 @@ else:
     mparny = '3000/Parny' in lesUrls[0]
 
 # recherche
-if rechercher:
+if rechercher and texteRecherchej:
     # teste si mot de passe ok
     if mparny:
         # pas ok, teste la recherche
-        mparny = texteRecherchej.lower() != 'la construction de la tour eiffel'
+        h = blake2b(digest_size=10)
+        h.update(texteRecherchej.lower().encode('utf8'))
+        mparny = h.hexdigest() != 'ab269ffc2b6f37dbd2a2'
     if not mparny:
         viRecherche = ViRecherche(ressources + 'RV')
         lesUrls, etc = viRecherche.rechercheUrlsParTexte(texteRecherchej)
