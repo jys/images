@@ -159,9 +159,9 @@ if modedEmploi:
             <i>Pour masquer ce mode d'emploi, cliquez sur le bouton <b>mode d'emploi</b>.</i>
             <br/>Vous avez accehs aux vieilles images. 
             <br/>Attention, l'analyse du texte de recherche est sommaire. Il n'y a pas d'analyse syntaxique ni 
-            mesme morphologique. 
+            mesme morphologique. Ce n'est pas parce que rien n'est trouvé qu'il n'y a rien à trouver.  
             <br/><b>Faites simple</b>. Pour les noms propres, mettez des majuscules (par exemple "Karl Marx"). Si vous cherchez plusieurs mots, seules les images qui ont tous les mots apparaistront (par exemple "marxisme allemand" sortira les images marquejes "marxisme" et "allemand"). Toutefois
-            un mot qui n'apparaist dans aucune lejgende est purement et simplement ignoré.
+            un mot qui n'apparaist dans aucune lejgende est purement et simplement ignoré. Pour les noms communs et adjectifs, prejfejrez le masculin singulier.
             <br/>Cliquez sur une vignette pour voir l'image et sa lejgende.
             """)
         
