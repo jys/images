@@ -7,12 +7,8 @@ import sys
 from os import path
 import codecs
 import re
-import subprocess
-import pickle
-import NindFile
-from NindLexiconindex import NindLexiconindex
-from NindTermindex import NindTermindex
-#from NindLocalindex import NindLocalindex
+from QcLexique import QcLexique
+from ViTermIndex import ViTermIndex
 
 def usage():
     script = '$PY/' + path.basename(sys.argv[0])
@@ -20,7 +16,7 @@ def usage():
 Programme de test de la classe ViRecherche.
 
 usage   : {script} <racine fichiers> <texte recherché> 
-usage   : {script} ressources/RV "Gustave Flaubert"
+usage   : {script} ressources/Latejcon "Gustave Flaubert"
 """)
 
 def main():
@@ -40,48 +36,30 @@ def main():
 
 def rechercheDocs(racine, texte):
     viRecherche = ViRecherche(racine)
-    vignettes = viRecherche.rechercheVignettes(texte)
-    print(vignettes)
+    idents = viRecherche.rechercheIdents(texte)
+    print(f'{len(idents)} identifiants trouvés')
+    print(idents)
     viRecherche.close()
     
-LIMIT = 100
 ################################################################
 class ViRecherche:
     def __init__(self, racine):
         # ouvre les 2 classes
-        self.nindLexiconindex = NindLexiconindex(f'{racine}.nindlexiconindex')
-        self.nindTermindex = NindTermindex(f'{racine}.nindtermindex')
+        self.viLexique = QcLexique(f'{racine}.vilexique')
+        self.viTermIndex = ViTermIndex(f'{racine}.vitermindex')
         # vejrifie l'apairage des fichiers
-        ident1 = self.nindLexiconindex.donneIdentificationFichier()
-        ident2 = self.nindTermindex.donneIdentificationFichier()
+        ident1 = self.viLexique.donneIdentificationFichier()
+        ident2 = self.viTermIndex.donneIdentificationFichier()
         if ident1 != ident2: raise Exception('FICHIERS NON APAIRÉS')
-        with open(f'{racine}-Urls.csv.pick', 'rb') as pick:
-            self.idsUrls = pickle.load(pick)
         
     ################################
     def close(self):
-        self.nindLexiconindex.close()
-        self.nindTermindex.close()
-        
+        self.viLexique.close()
+        self.viTermIndex.close()
+                
     ###############################
-    # ah partir d'un texte, trouve une liste de vignettes
-    def rechercheUrlsParTexte(self, texte):
-        idsDocs = self.__rechercheParTexte(texte)
-        return self.rechercheUrlsParIds(idsDocs)
-    
-    ###############################
-    # ah partir d'une liste d'ids, trouve une liste de vignettes
-    def rechercheUrlsParIds(self, idsDocs):
-        idsDocs.sort()
-        lesUrls = []
-        for idDoc in idsDocs[:LIMIT]:
-            # 109400141;1608/10940-141.jpg
-            lesUrls.append(f'{idDoc};{self.idsUrls[idDoc]}')
-        return lesUrls, len(idsDocs)>LIMIT
-        
-    ###############################
-    # ah partir d'un texte, trouve une liste de documents
-    def __rechercheParTexte(self, texte):
+    # ah partir d'un texte, trouve une liste d'identifiants d'images en hexa
+    def rechercheIdents(self, texte):
         mots = texte.split()
         etOk = False
         for mot in mots:
@@ -93,33 +71,32 @@ class ViRecherche:
         if not etOk: idsDocs = set()
         # recherche avec tous les mots concatejnejs
         idsDocs |= self.__rechercheParMot('_'.join(mots))
-        return list(idsDocs)
+        return sorted(list(idsDocs))
             
     ###############################
     # ah partir d'un mot simple, trouve une liste de documents
     def __rechercheParMot(self, mot):
-        idsDocs = set()
-        idsDocs |= self.__rechercheUnitaire(mot)
-        idsDocs |= self.__rechercheUnitaire('§_Person.PERSON_' + mot)
-        idsDocs |= self.__rechercheUnitaire('§_Location.LOCATION_' + mot)
-        idsDocs |= self.__rechercheUnitaire('§_Miscellaneous.MISCELLANEOUS_' + mot)
+        # 1) mot tel quel
+        idsDocs = self.__rechercheUnitaire(mot)
+        # 2) mot en majuscules
+        idsDocs |= self.__rechercheUnitaire(mot.upper())
+        # 3) mot en minuscules
+        idsDocs |= self.__rechercheUnitaire(mot.lower())
+        # 4) avec les premiehres lettres en majuscules
+        sousmots = mot.split('_')
+        for ii in range(len(sousmots)): sousmots[ii] = sousmots[ii].title()
+        idsDocs |= self.__rechercheUnitaire('_'.join(sousmots))
         return idsDocs
     
     ###############################        
     # ah partir d'un mot, trouve une liste de documents
-    def __rechercheUnitaire(self, mots):
-        idsDocs = set()
-        motsSimples = mots.split('_')
-        motId = self.nindLexiconindex.donneIdentifiant(motsSimples)
+    def __rechercheUnitaire(self, mot):
+        identMot = self.viLexique.trouveIdentifiant(mot)
         # si mot inconnu, aucun document
-        if motId == 0: return idsDocs
+        if identMot == 0: return set()
         # sinon sort la liste des documents concernejs
-        listeDocs = []
-        termesCGList = self.nindTermindex.donneListeTermesCG(motId)
-        for (categorie, frequenceTerme, docs) in termesCGList:
-            for (noDoc, frequenceDoc) in docs: idsDocs.add(noDoc)
-        return idsDocs
-        
+        return set(self.viTermIndex.trouveDonnejes(identMot))
+       
         
 if __name__ == '__main__':
     main()

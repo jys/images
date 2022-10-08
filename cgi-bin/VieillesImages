@@ -11,8 +11,12 @@ import subprocess
 import cgitb
 from hashlib import blake2b
 from ViRecherche import ViRecherche
-#cgitb.enable()
-cgitb.enable(display=0, logdir="logdir")
+from ViUrls import ViUrls
+
+LIMIT=100
+
+cgitb.enable()
+#cgitb.enable(display=0, logdir="logdir")
 
 # L'en-tête qui va bien
 print("Content-Type: text/html")
@@ -28,35 +32,41 @@ else:
     ressources = '../ressources/'               # canap de Dom
         
 # rejcupejration des ejvejnements et des sauvegardes
-premiehreFois = 'latejcon' not in form
+latejcon = form.getvalue('latejcon')
+premiehreFois = not latejcon
 #modedEmploi = ('modedEmploi' in form) ^ ('avecModedEmploi' in form)
 modedEmploi = ('modedEmploi' in form) ^ ('sansModedEmploi' not in form)
 rechercher = form.getvalue('ça')
 if rechercher: texteRecherchej = form.getvalue('texteRecherchej') or ''
 else: texteRecherchej = form.getvalue('svtexteRecherchej') or ''
-lesUrls = form.getlist('lesUrls') or []
-laLejgende = form.getvalue('laLejgende')
+svLesUrls = form.getvalue('lesUrls') or ''
+if svLesUrls == '': lesUrls = []
+else: lesUrls = svLesUrls.split(',')
+lesIdents = form.getvalue('lesIdents') or ''
+if lesIdents == '': nombreIdents = 0
+else: nombreIdents = len(lesIdents.split(','))
+svLaPremiehre = form.getvalue('laPremiehre') or '0'
+laPremiehre = int(svLaPremiehre)
+laLejgende = form.getvalue('laLejgende') or ''
 clicImage = ''
 for clef in form.keys():
     m = re.match("IMG([0-9]*)\.x", clef)
     if m is None: continue
     clicImage = m.group(1)
-etc = 'avecEtc' in form
+avant = form.getvalue('avant.x')
+aprehs = form.getvalue('aprehs.x')
 
 # premiehre fois 
 if premiehreFois:
-    viRecherche = ViRecherche(ressources + 'RV')
-    lesUrls, etc = viRecherche.rechercheUrlsParIds([i for i in range(1,16)])
-    viRecherche.close()
+    viUrls = ViUrls(ressources + 'VI')
+    lesUrls = viUrls.rechercheUrls([i for i in range(1,17)])
     laLejgende = ''
+    latejcon = '1'
     mparny = True
-elif len(lesUrls) == 0:
-    mparny = False
-else:
-    mparny = '3000/Parny' in lesUrls[0]
+else: mparny = latejcon != "1.732"
 
 # recherche
-if rechercher and texteRecherchej:
+if rechercher:
     # teste si mot de passe ok
     if mparny:
         # pas ok, teste la recherche
@@ -64,9 +74,15 @@ if rechercher and texteRecherchej:
         h.update(texteRecherchej.lower().encode('utf8'))
         mparny = h.hexdigest() != 'ab269ffc2b6f37dbd2a2'
     if not mparny:
-        viRecherche = ViRecherche(ressources + 'RV')
-        lesUrls, etc = viRecherche.rechercheUrlsParTexte(texteRecherchej)
+        viRecherche = ViRecherche(ressources + 'Latejcon')
+        identsRecherche = viRecherche.rechercheIdents(texteRecherchej)
         viRecherche.close()
+        nombreIdents = len(identsRecherche)
+        lesIdents = ','.join(["%x"%i for i in identsRecherche])
+        viUrls = ViUrls(ressources + 'VI')
+        lesUrls = viUrls.rechercheUrls(identsRecherche[:100])
+        laPremiehre = 0
+        latejcon = "1.732"
     laLejgende = ''
 
 # clic image
@@ -77,7 +93,24 @@ if clicImage:
     # trouve la lejgende
     m = re.match("([0-9]*);.*", lesUrls[0])
     identDoc = m.group(1)
-    laLejgende = subprocess.getoutput(f'grep "^{identDoc}\." {ressources + "RV-Corpus.txt"}').replace('"', '&quot;')
+    laLejgende = subprocess.getoutput(f'grep "^{identDoc}\." {ressources + "viCorpus.txt"}').replace('"', '&quot;')
+    
+# clic avant
+if avant:
+    if laPremiehre > 100: laPremiehre -= 100 
+    else: laPremiehre = 0
+    
+# clic aprehs
+if aprehs:
+    if laPremiehre + 200 < nombreIdents: laPremiehre += 100 
+    else: laPremiehre = nombreIdents -100
+    
+# clic avant ou aprehs
+if avant or aprehs:
+    identsRecherche = [int(i, 16) for i in lesIdents.split(',')]
+    viUrls = ViUrls(ressources + 'VI')
+    lesUrls = viUrls.rechercheUrls(identsRecherche[laPremiehre:laPremiehre+100])
+    laLejgende = ''
     
 # la trace
 if premiehreFois or rechercher:
@@ -135,9 +168,18 @@ print(f"""
     <p class="mi3">
     <mil>Que cherchez-vous ? </mi1>&nbsp;&nbsp;
     <input type="text" name="texteRecherchej" value="{texteRecherchej}" style="font-size: 16pt"/>
-    <input type="submit" name="ça" value="ça" style="font-size: 16pt"/>
-    </p>
-    </div>
+    <input type="submit" name="ça" value="ça" style="font-size: 16pt"/>&nbsp;&nbsp;&nbsp;&nbsp;
+    """)
+if texteRecherchej:
+    if nombreIdents == 0: 
+        print('<mil>Rien trouvé, dejsolé. </mi1>')
+    elif nombreIdents == 1:
+        print('<mil>Une seule image trouveje. </mi1>')
+    else:
+        print(f'<mil>{nombreIdents} images trouvejes. </mi1>')
+print("""
+    </p> 
+    </div>   
     """)
 
 # le mode d'emploi
@@ -149,20 +191,21 @@ if modedEmploi:
     if mparny:
         print("""
             <i>Pour masquer ce mode d'emploi, cliquez sur le bouton <b>mode d'emploi</b>.</i>
-            <br/>Les vieilles images ne sont pas publiques. Pour les voir, il faut une clef et une
+            <br/><u>Les vieilles images ne sont pas publiques</u>. Pour les voir, il faut une clef et une
             serrure (un mot de passe et l'endroit où le mettre)... C'est pas gagné. Vous pouvez quand
             mesme demander à ivo@latejcon.art... Mais Ivo a mauvais caractehre, il faut estre diplomate...
-            <br/>Mais, comme consolation, comme compensation, vous avez quelques images de notre ejditeur Parny.
+            <br/>Mais, comme consolation, comme compensation, comme apaisement, vous avez quelques images de notre ejditeur Parny.
             """)
     else:
         print("""
             <i>Pour masquer ce mode d'emploi, cliquez sur le bouton <b>mode d'emploi</b>.</i>
-            <br/>Vous avez accehs aux vieilles images. 
-            <br/>Attention, l'analyse du texte de recherche est sommaire. Il n'y a pas d'analyse syntaxique ni 
-            mesme morphologique. Ce n'est pas parce que rien n'est trouvé qu'il n'y a rien à trouver.  
-            <br/><b>Faites simple</b>. Pour les noms propres, mettez des majuscules (par exemple "Karl Marx"). Si vous cherchez plusieurs mots, seules les images qui ont tous les mots apparaistront (par exemple "marxisme allemand" sortira les images marquejes "marxisme" et "allemand"). Toutefois
-            un mot qui n'apparaist dans aucune lejgende est purement et simplement ignoré. Pour les noms communs et adjectifs, prejfejrez le masculin singulier.
-            <br/>Cliquez sur une vignette pour voir l'image et sa lejgende.
+            <br/>Vous avez accehs aux vieilles images, aux plus de 390&nbsp;000 vieilles images. 
+            <br/>Attention, l'indexation et l'analyse du texte de recherche sont sommaires.
+            Il n'y a pas d'analyse syntaxique ni mesme morphologique. 
+            Aussi, si rien n'est trouvé, ça ne signifie pas obligatoirement qu'il n'y a rien à trouver.  
+            <br/><b>Faites simple</b>. Cherchez des noms propres ou des mots clefs, ne faistes pas de phrases, essayez et rejessayez et, surtout, faites simple et ne faistes pas de phrases.
+            Si vous cherchez plusieurs mots (ex "Karl Marx rigolo"), les mots inconnus du systehme sont ignorejs ("rigolo") et seules les images qui ont tous les autres mots apparaistront (les images qui ont à la fois "Karl" et "Marx). 
+            <br/>Cliquez sur une vignette pour voir l'image et sa lejgende et ejventuellement sur les flehches pour accéder aux images suivantes ou prejcejdents.
             """)
         
 print('</div>')
@@ -178,33 +221,36 @@ if laLejgende:
         """)
    
 # les vignettes
+if laPremiehre != 0:
+    print(f"""
+        <input type="image" name="avant" 
+        src="../vignettes/avant.jpeg" alt="../vignettes/avant.jpeg"/>
+        """)
 compt = 0
 for url in lesUrls:
     # 109400141;1608/10940-141.jpg
     m = re.match("[0-9]*;(.*)", url)
     vignette = m.group(1)
     print(f"""
-        <input type="image" name="IMG{compt}" src="../vignettes/{vignette}" alt="../vignettes/{vignette}"/>
+        <input type="image" name="IMG{compt}" 
+        src="../vignettes/{vignette}" alt="../vignettes/{vignette}"/>
         """) 
     compt +=1
-if etc: print('<img src="../vignettes/etc.jpg" alt="../vignettes/etc.jpg"/>')
-if len(lesUrls) == 0: 
+if laPremiehre + LIMIT < nombreIdents:
     print(f"""
-        <div id="af1">
-        <p class="mi3">
-        <mil>Rien trouvé, dejsolé. </mi1>
-        </p>
-        </div>
-        """)    
+        <input type="image" name="aprehs" 
+        src="../vignettes/aprehs.jpeg" alt="../vignettes/aprehs.jpeg"/>
+        """)
         
 # passage de l'ejtat
-print('<input type="hidden" name="latejcon" value="1"/>')
 if not modedEmploi: print('<input type="hidden" name="sansModedEmploi" value="1"/>')
 #if modedEmploi: print('<input type="hidden" name="avecModedEmploi" value="1"/>')
 if texteRecherchej: print(f'<input type="hidden" name="svtexteRecherchej" value="{texteRecherchej}"/>')
-if laLejgende : print(f'<input type="hidden" name="laLejgende" value="{laLejgende}"/>')
-for url in lesUrls: print(f'<input type="hidden" name="lesUrls" value="{url}"/>')
-if etc: print('<input type="hidden" name="avecEtc" value="1"/>')
-
+print(f'<input type="hidden" name="laLejgende" value="{laLejgende}"/>')
+svLesUrls = ','.join(lesUrls)
+print(f'<input type="hidden" name="lesUrls" value="{svLesUrls}"/>')
+print(f'<input type="hidden" name="latejcon" value="{latejcon}"/>')
+print(f'<input type="hidden" name="lesIdents" value="{lesIdents}"/>')
+print(f'<input type="hidden" name="laPremiehre" value="{laPremiehre}"/>')
 
 print('</form></body></html>')
