@@ -122,8 +122,9 @@ if premiehreFois or rechercher:
     else: port = ''
     if 'HTTP_USER_AGENT' in environ: agent = environ['HTTP_USER_AGENT']
     else: environ = ''
+    nombreMots = len(texteRecherchej.split())
     with open(fichierTrace, 'a') as trace:
-        trace.write(f'{timbreDeTemps} | {adrIp} | {port} | {agent} | {texteRecherchej} | \n')
+        trace.write(f'{timbreDeTemps} | {adrIp} | {port} | {agent} | {nombreMots} | {nombreIdents}\n')
 
 
 # l'en-teste
