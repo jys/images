@@ -50,7 +50,6 @@ class ViUrls:
     ###############################
     # ah partir d'une liste d'ids, trouve une liste de vignettes
     def rechercheUrls(self, idsDocs):
-        idsDocs.sort()
         lesUrls = []
         for idDoc in idsDocs:
             # 109400141;1608/10940-141.jpg

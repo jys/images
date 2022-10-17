@@ -37,6 +37,7 @@ premiehreFois = not latejcon
 #modedEmploi = ('modedEmploi' in form) ^ ('avecModedEmploi' in form)
 modedEmploi = ('modedEmploi' in form) ^ ('sansModedEmploi' not in form)
 rechercher = form.getvalue('ça')
+rechercherDesc = form.getvalue('descripteurs')
 if rechercher: texteRecherchej = form.getvalue('texteRecherchej') or ''
 else: texteRecherchej = form.getvalue('svtexteRecherchej') or ''
 svLesUrls = form.getvalue('lesUrls') or ''
@@ -75,7 +76,7 @@ if rechercher:
         mparny = h.hexdigest() != 'ab269ffc2b6f37dbd2a2'
     if not mparny:
         viRecherche = ViRecherche(ressources + 'Latejcon')
-        identsRecherche = viRecherche.rechercheIdents(texteRecherchej)
+        identsRecherche = viRecherche.rechercheIdentsParTexte(texteRecherchej)
         viRecherche.close()
         nombreIdents = len(identsRecherche)
         lesIdents = ','.join(["%x"%i for i in identsRecherche])
@@ -84,6 +85,23 @@ if rechercher:
         laPremiehre = 0
         latejcon = "1.732"
     laLejgende = ''
+    
+# recherche sur descripteurs
+if rechercherDesc:
+    m = re.match("([0-9]*)\..*¦(.*)©.*", laLejgende)
+    identImage = int(m.group(1))
+    texteRecherchej = m.group(2) + ' ·'
+    if not mparny:
+        viRecherche = ViRecherche(ressources + 'Latejcon')
+        identsRecherche = viRecherche.rechercheIdentsParTexte(texteRecherchej)
+        viRecherche.close()
+        identsRecherche.remove(identImage)
+        identsRecherche.insert(0, identImage)
+        nombreIdents = len(identsRecherche)
+        lesIdents = ','.join(["%x"%i for i in identsRecherche])
+        viUrls = ViUrls(ressources + 'VI')
+        lesUrls = viUrls.rechercheUrls(identsRecherche[:100])
+        laPremiehre = 0
 
 # clic image
 if clicImage:
@@ -153,6 +171,7 @@ print("""
     #af3 {margin-top: 20px; margin-bottom: 20px; margin-right: 100px; margin-left: 50px; background-color: White; }
     button {padding: 0; border: none; background: none;}
     .td1 { padding: 15px; font-size: 120%; }
+    .fgris { background-color: Lavender;}
     </style>
     </head>
     """)
@@ -169,7 +188,7 @@ print(f"""
     <p class="mi3">
     <mil>Que cherchez-vous ? </mi1>&nbsp;&nbsp;
     <input type="text" name="texteRecherchej" value="{texteRecherchej}" style="font-size: 16pt"/>
-    <input type="submit" name="ça" value="ça" style="font-size: 16pt"/>&nbsp;&nbsp;&nbsp;&nbsp;
+    <input type="submit" name="ça" value="&#x1F50D;" style="font-size: 16pt"/>&nbsp;&nbsp;&nbsp;&nbsp;
     """)
 if texteRecherchej:
     if nombreIdents == 0: 
@@ -203,8 +222,8 @@ if modedEmploi:
             <br/>Vous avez accehs aux vieilles images, aux plus de 390&nbsp;000 vieilles images. 
             <br/>Attention, l'indexation et l'analyse du texte de recherche sont sommaires.
             Il n'y a pas d'analyse syntaxique ni mesme morphologique. 
-            Aussi, si rien n'est trouvé, ça ne signifie pas obligatoirement qu'il n'y a rien à trouver.  
-            <br/><b>Faites simple</b>. Cherchez des noms propres ou des mots clefs, ne faistes pas de phrases, essayez et rejessayez et, surtout, faites simple et ne faistes pas de phrases.
+            Aussi, si rien n'est trouvé, ça ne signifie pas obligatoirement qu'il n'y a rien à trouver, juste qu'il faut chercher diffejremment.  
+            <br/><b>Faites simple</b>. Cherchez des noms propres, des mots clefs ou des dates (anneje ou mois + anneje), ne faistes pas de phrases, essayez et rejessayez et, surtout, faites simple et ne faistes pas de phrases.
             Si vous cherchez plusieurs mots (ex "Karl Marx rigolo"), les mots inconnus du systehme sont ignorejs ("rigolo") et seules les images qui ont tous les autres mots apparaistront (les images qui ont à la fois "Karl" et "Marx). 
             <br/>Cliquez sur une vignette pour voir l'image et sa lejgende et ejventuellement sur les flehches pour accéder aux images suivantes ou prejcejdents.
             """)
@@ -215,10 +234,18 @@ print('</div>')
 if laLejgende:
     m = re.match("[0-9]*;(.*)", lesUrls[0])
     image = m.group(1)
+    m = re.match("(.*)¦(.*)(©.*)", laLejgende)
+    dejbut = m.group(1)
+    descripteurs = m.group(2)
+    copyright = m.group(3)
     print(f"""
         <table><tr><td>
         <img src="../400x400/{image}" alt="../400x400/{image}"/>
-        </td><td class="td1">{laLejgende}</td></tr></table>
+        </td><td class="td1">{dejbut}
+        <br/><font class="fgris">{descripteurs}</font> 
+        <input type="submit" name="descripteurs" value="&#x1F50D;" style="font-size: 16pt;"/>
+        <br/>{copyright}
+        </td></tr></table>
         """)
    
 # les vignettes

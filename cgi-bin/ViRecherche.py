@@ -36,7 +36,7 @@ def main():
 
 def rechercheDocs(racine, texte):
     viRecherche = ViRecherche(racine)
-    idents = viRecherche.rechercheIdents(texte)
+    idents = viRecherche.rechercheIdentsParTexte(texte)
     print(f'{len(idents)} identifiants trouvés')
     print(idents)
     viRecherche.close()
@@ -58,11 +58,16 @@ class ViRecherche:
         self.viTermIndex.close()
                 
     ###############################
-    # ah partir d'un texte, trouve une liste d'identifiants d'images en hexa
-    def rechercheIdents(self, texte):
-        mots = texte.split()
+    # ah partir d'un texte, trouve une liste d'identifiants d'images 
+    # si le texte a des ·, le traite comme des mots clefs 
+    def rechercheIdentsParTexte(self, texte):
+        if '·' in texte: mots = texte.split('·')
+        else: mots = texte.split()
         etOk = False
         for mot in mots:
+            mot = mot.strip()
+            if mot == '': continue
+            mot = mot.replace(' ', '_')
             idsDocsMot = self.__rechercheParMot(mot)
             if len(idsDocsMot) == 0: continue
             if etOk : idsDocs &= idsDocsMot
@@ -70,7 +75,7 @@ class ViRecherche:
             etOk = True
         if not etOk: idsDocs = set()
         # recherche avec tous les mots concatejnejs
-        idsDocs |= self.__rechercheParMot('_'.join(mots))
+        if '·' in texte: idsDocs |= self.__rechercheParMot('_'.join(mots))
         return sorted(list(idsDocs))
             
     ###############################
