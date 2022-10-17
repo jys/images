@@ -15,8 +15,8 @@ from ViUrls import ViUrls
 
 LIMIT=100
 
-cgitb.enable()
-#cgitb.enable(display=0, logdir="logdir")
+#cgitb.enable()
+cgitb.enable(display=0, logdir="logdir")
 
 # L'en-tête qui va bien
 print("Content-Type: text/html")
