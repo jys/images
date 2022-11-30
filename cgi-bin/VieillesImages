@@ -49,6 +49,7 @@ else: nombreIdents = len(lesIdents.split(','))
 svLaPremiehre = form.getvalue('laPremiehre') or '0'
 laPremiehre = int(svLaPremiehre)
 laLejgende = form.getvalue('laLejgende') or ''
+laLejgende = laLejgende.replace('"', '&quot;')
 clicImage = ''
 for clef in form.keys():
     m = re.match("IMG([0-9]*)\.x", clef)

@@ -5,7 +5,6 @@ __copyright__ = "Copyright (C) 2022 LATEJCON"
 
 import sys
 from os import path
-import codecs
 import re
 from QcLexique import QcLexique
 from ViTermIndex import ViTermIndex
@@ -75,7 +74,7 @@ class ViRecherche:
             etOk = True
         if not etOk: idsDocs = set()
         # recherche avec tous les mots concatejnejs
-        if '·' in texte: idsDocs |= self.__rechercheParMot('_'.join(mots))
+        if '·' not in texte: idsDocs |= self.__rechercheParMot('_'.join(mots))
         return sorted(list(idsDocs))
             
     ###############################
@@ -88,9 +87,9 @@ class ViRecherche:
         # 3) mot en minuscules
         idsDocs |= self.__rechercheUnitaire(mot.lower())
         # 4) avec les premiehres lettres en majuscules
-        sousmots = mot.split('_')
-        for ii in range(len(sousmots)): sousmots[ii] = sousmots[ii].title()
-        idsDocs |= self.__rechercheUnitaire('_'.join(sousmots))
+        idsDocs |= self.__rechercheUnitaire(mot.title())
+        # 5) avec la seule premiehre lettre en majuscule
+        idsDocs |= self.__rechercheUnitaire(mot.capitalize())
         return idsDocs
     
     ###############################        
