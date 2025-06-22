@@ -26,10 +26,9 @@ print()
 form = cgi.FieldStorage()
 #print(form)
 # un dejtail d'implantation que je n'ai pas compris
-if path.abspath(path.curdir).endswith('jys/Boa/imagesRV'): 
-    ressources = 'ressources/'     #local
-else: 
-    ressources = '../ressources/'               # canap de Dom
+ressources = 'ressources/'      # cas gejnejral
+if not path.isdir(ressources): ressources = '../ressources/' # canap de Dom
+if not path.isdir(ressources): print("PAS DE RESSOURCES !!")
         
 # rejcupejration des ejvejnements et des sauvegardes
 latejcon = form.getvalue('latejcon')
