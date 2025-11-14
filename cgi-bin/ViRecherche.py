@@ -50,6 +50,7 @@ class ViRecherche:
         ident1 = self.viLexique.donneIdentificationFichier()
         ident2 = self.viTermIndex.donneIdentificationFichier()
         if ident1 != ident2: raise Exception('FICHIERS NON APAIRÉS')
+        self.motsVides = frozenset(['l', 'le', 'la', 'les', 'd', 'de', 'du', 'des'])
         
     ################################
     def close(self):
@@ -61,20 +62,22 @@ class ViRecherche:
     # si le texte a des ·, le traite comme des mots clefs 
     def rechercheIdentsParTexte(self, texte):
         if '·' in texte: mots = texte.split('·')
-        else: mots = texte.split()
-        etOk = False
-        for mot in mots:
-            mot = mot.strip()
-            if mot == '': continue
-            mot = mot.replace(' ', '_')
+        else: mots = re.split(r"[\s,;:!?.\(\)\"']", texte)
+        mots = [t for t in mots if t.strip()]   # Supprime les chaînes vides
+        # recherche A B C ==> A_B_C + (A & B & C)
+        premierEt = True
+        for i, mot in enumerate(mots):
+            if mot in self.motsVides: continue
             idsDocsMot = self.__rechercheParMot(mot)
-            if len(idsDocsMot) == 0: continue
-            if etOk : idsDocs &= idsDocsMot
-            else: idsDocs = idsDocsMot
-            etOk = True
-        if not etOk: idsDocs = set()
+            if premierEt: idsDocs = idsDocsMot
+            else: idsDocs &= idsDocsMot
+            premierEt = False
         # recherche avec tous les mots concatejnejs
-        if '·' not in texte: idsDocs |= self.__rechercheParMot('_'.join(mots))
+        if '·' not in texte: 
+            idsDocs |= self.__rechercheParMot('_'.join(mots))
+            # mesme chose sans les mots vides
+            mots = [t for t in mots if t not in self.motsVides]
+            idsDocs |= self.__rechercheParMot('_'.join(mots))
         return sorted(list(idsDocs))
             
     ###############################
