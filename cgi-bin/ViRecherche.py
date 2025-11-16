@@ -61,12 +61,14 @@ class ViRecherche:
     # ah partir d'un texte, trouve une liste d'identifiants d'images 
     # si le texte a des ·, le traite comme des mots clefs 
     def rechercheIdentsParTexte(self, texte):
+        texte = texte.lower()
         if '·' in texte: mots = texte.split('·')
         else: mots = re.split(r"[\s,;:!?.\(\)\"']", texte)
         mots = [t for t in mots if t.strip()]   # Supprime les chaînes vides
         # recherche A B C ==> A_B_C + (A & B & C)
         premierEt = True
         for i, mot in enumerate(mots):
+            mot = re.sub(r'\s+', '_', mot.strip())
             if mot in self.motsVides: continue
             idsDocsMot = self.__rechercheParMot(mot)
             if premierEt: idsDocs = idsDocsMot

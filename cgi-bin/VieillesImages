@@ -70,7 +70,7 @@ try:
     if premiehreFois:
         #viUrls = ViUrls(ressources + 'VI')
         #lesUrls = viUrls.rechercheUrls([i for i in range(1,17)])
-        texteRecherchej = "viallon"
+        texteRecherchej = "Parny"
         rechercher = True
         laLejgende = ''
         latejcon = '1'
@@ -100,9 +100,9 @@ try:
         # viRecherche = ViRecherche(ressources + 'Latejcon')
         identsRecherche = viRecherche.rechercheIdentsParTexte(texteRecherchej)
         viRecherche.close()
-        if rechercherDesc:
-            identsRecherche.remove(identImage)
-            identsRecherche.insert(0, identImage)
+        # if rechercherDesc:
+        #     identsRecherche.remove(identImage)
+        #     identsRecherche.insert(0, identImage)
         # filtrage 
         nombreIdentsNf = len(identsRecherche)
         if mparny:
