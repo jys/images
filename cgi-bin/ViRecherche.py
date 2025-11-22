@@ -62,8 +62,11 @@ class ViRecherche:
     # si le texte a des ·, le traite comme des mots clefs 
     def rechercheIdentsParTexte(self, texte):
         texte = texte.lower()
-        if '·' in texte: mots = texte.split('·')
-        else: mots = re.split(r"[\s,;:!?.\(\)\"']", texte)
+        if '·' in texte: 
+            mots = texte.split('·')
+            mots = [re.sub(r'[,"()]+', '', t) for t in mots if t != '']
+            mots = [re.sub(r'[\s\-\.:\']+', '_', t.strip()) for t in mots if t != ''] 
+        else: mots = re.split(r"[\s,;:!?.\(\)\"\'']", texte)
         mots = [t for t in mots if t.strip()]   # Supprime les chaînes vides
         # recherche A B C ==> A_B_C + (A & B & C)
         premierEt = True

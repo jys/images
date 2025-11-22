@@ -15,15 +15,19 @@ from hashlib import blake2b
 from ViRecherche import ViRecherche
 from ViUrls import ViUrls
 
-LIMIT=100
-# MIN_FILTRE=6200000
-# MAX_FILTRE=6220000
+MAX_VIGN=100
+# plage de numejrotation des images libres
 MIN_FILTRE=27500101
 MAX_FILTRE=27570137
 
 #cgitb.enable()
 # cgitb.enable(display=0, logdir="logdir")
 
+# 8 actions de l'utilisateur
+# A- texte de recherche + ok  / B- mode d'emploi
+# C- clique sur avancer de MAX_VIGN  / D- clique sur reculer de MAX_VIGN 
+# E- clique sur une vignette  /  F- clique sur recherche par mots clefs
+# G- clique prochaine image  /  H- clique image précédente
 try:
     # L'en-tête qui va bien
     print("Content-Type: text/html")
@@ -37,58 +41,102 @@ try:
     if not path.isdir(ressources): ressources = '../ressources/' # canap de Dom
     if not path.isdir(ressources): print("PAS DE RESSOURCES !!")
             
-    # rejcupejration des ejvejnements et des sauvegardes
-    latejcon = form.getvalue('latejcon')
-    premiehreFois = not latejcon
-    modedEmploi = ('modedEmploi' in form) ^ ('sansModedEmploi' not in form)
+    # rejcupejration des 8 actions de l'utilisateur
+    # A- texte de recherche + ok
     rechercher = form.getvalue('ça')
-    rechercherDesc = form.getvalue('descripteurs')
-    if rechercher: texteRecherchej = form.getvalue('texteRecherchej') or ''
-    else: texteRecherchej = form.getvalue('svtexteRecherchej') or ''
-    svLesUrls = form.getvalue('lesUrls') or ''
-    if svLesUrls == '': lesUrls = []
-    else: lesUrls = svLesUrls.split(',')
-    lesIdents = form.getvalue('lesIdents') or ''
-    if lesIdents == '': nombreIdents = 0
-    else: nombreIdents = len(lesIdents.split(','))
-    nombreIdentsNf = form.getvalue('nombreIdentsNf') or ''
-    if nombreIdentsNf: nombreIdentsNf = int(nombreIdentsNf)
-    else: nombreIdentsNf = 0
-    svLaPremiehre = form.getvalue('laPremiehre') or '0'
-    laPremiehre = int(svLaPremiehre)
-    laLejgende = form.getvalue('laLejgende') or ''
-    laLejgende = laLejgende.replace('"', '&quot;')
+    # B- mode d'emploi
+    clicModeEmploi = form.getvalue('modedEmploi')
+    # C- clique sur avancer de MAX_VIGN
+    aprehs = form.getvalue('aprehs.x')
+    # D- clique sur reculer de MAX_VIGN 
+    avant = form.getvalue('avant.x')
+    # E- clique sur une vignette (de 0 ah 99)
     clicImage = ''
     for clef in form.keys():
         m = re.match("IMG([0-9]*).x", clef)
         if m is None: continue
         clicImage = m.group(1)
-    avant = form.getvalue('avant.x')
-    aprehs = form.getvalue('aprehs.x')
+    # F- clique sur recherche par mots clefs
+    rechercherDesc = form.getvalue('descripteurs')
+    # G- clique prochaine image
+    imageSuivante = form.getvalue('imageSuivante')
+    # H- clique image précédente
+    imagePrejcejd = form.getvalue('imagePrejcejd')
 
-    # premiehre fois 
+    # rejcupejration des donnejes et des sauvegardes
+    modedEmploi = ('modedEmploi' in form) ^ ('sansModedEmploi' not in form)
+    avecLejgende = form.getvalue('avecLejgende')
+    latejcon = form.getvalue('latejcon')
+    if rechercher: texteRecherchej = form.getvalue('texteRecherchej') or ''
+    else: texteRecherchej = form.getvalue('svtexteRecherchej') or ''
+    # svLesUrls = form.getvalue('lesUrls') or ''
+    lesIdents = form.getvalue('lesIdents') or ''
+    nombreIdentsNf = form.getvalue('nombreIdentsNf') or ''
+    svLaPremiehre = form.getvalue('laPremiehre') or '0'
+    laPremiehre = int(svLaPremiehre)
+
+    # calculs subsejquents immejdiats
+    premiehreFois = not latejcon
+    # if svLesUrls == '': lesUrls = []
+    # else: lesUrls = svLesUrls.split(',')
+    if lesIdents == '': nombreIdents = 0
+    else: nombreIdents = len(lesIdents.split(','))
+    if nombreIdentsNf: nombreIdentsNf = int(nombreIdentsNf)
+    else: nombreIdentsNf = 0
+
+    # premiehre fois et filtrage
     if premiehreFois:
-        #viUrls = ViUrls(ressources + 'VI')
-        #lesUrls = viUrls.rechercheUrls([i for i in range(1,17)])
         texteRecherchej = "Parny"
         rechercher = True
         laLejgende = ''
         latejcon = '1'
-        mparny = True
-    else: mparny = latejcon != "1.732"
+        affichFiltrej = True
+    else: affichFiltrej = latejcon != "1.732"
 
-    # recherche
+    # teste leveje du filtrage
     if rechercher:
         # teste si mot de passe ok
-        if mparny:
+        if affichFiltrej:
             # pas ok, teste la recherche
             h = blake2b(digest_size=10)
             h.update(texteRecherchej.lower().encode('utf8'))
-            mparny = h.hexdigest() != 'ab269ffc2b6f37dbd2a2'
-        if not mparny: latejcon = "1.732"
+            affichFiltrej = h.hexdigest() != 'ab269ffc2b6f37dbd2a2'
+        if not affichFiltrej: latejcon = "1.732"
         laLejgende = ''
         
-    # recherche sur descripteurs
+    # clic avant
+    if avant:
+        laPremiehre = (laPremiehre -MAX_VIGN) % nombreIdents
+        laLejgende = ''
+        
+    # clic aprehs
+    if aprehs:
+        laPremiehre = (laPremiehre +MAX_VIGN) % nombreIdents
+        laLejgende = ''
+        
+    # clic image suivante
+    if imageSuivante:
+        laPremiehre = (laPremiehre +1) % nombreIdents
+        
+    # clic image prejcejdente
+    if imagePrejcejd:
+        laPremiehre = (laPremiehre -1) % nombreIdents
+        
+    # clic image
+    if clicImage:
+        # trouve l'index de l'image dans le rejsultat de la recherche
+        laPremiehre = (laPremiehre + int(clicImage)) % nombreIdents
+        
+    # lecture de la nouvelle notice
+    if clicImage or rechercherDesc or imageSuivante or imagePrejcejd or (clicModeEmploi and avecLejgende):
+        # trouve identifiant de l'image
+        identImage = int(lesIdents.split(',')[laPremiehre], 16)
+        laLejgende = subprocess.getoutput(f'grep "^{identImage}." {ressources + "VI.vicorpustxt"}').replace('"', '&quot;')
+    else:
+        laLejgende = ''
+        
+
+    # mise en place recherche sur descripteurs
     if rechercherDesc:
         m = re.match("([0-9]*)..*¦(.*)©.*", laLejgende)
         identImage = int(m.group(1))
@@ -97,51 +145,35 @@ try:
     # recherches sur texte et descripteurs
     if rechercher or rechercherDesc:
         viRecherche = ViRecherche(ressources + 'VI')
-        # viRecherche = ViRecherche(ressources + 'Latejcon')
         identsRecherche = viRecherche.rechercheIdentsParTexte(texteRecherchej)
         viRecherche.close()
-        # if rechercherDesc:
-        #     identsRecherche.remove(identImage)
-        #     identsRecherche.insert(0, identImage)
         # filtrage 
         nombreIdentsNf = len(identsRecherche)
-        if mparny:
+        if affichFiltrej:
             identsRecherche = [ident for ident in identsRecherche if MIN_FILTRE <= ident <= MAX_FILTRE]
         # les idents et les URLs
         nombreIdents = len(identsRecherche)
         lesIdents = ','.join(["%x"%i for i in identsRecherche])
-        viUrls = ViUrls(ressources + 'VI')
-        lesUrls = viUrls.rechercheUrls(identsRecherche[:100])
+        # la premiehre en teste
         laPremiehre = 0
 
-    # clic image
-    if clicImage:
-        # rejordonne les vignettes
-        index = int(clicImage)
-        lesUrls = lesUrls[index:] + lesUrls[:index]
-        # trouve la lejgende
-        m = re.match("([0-9]*);.*", lesUrls[0])
-        identDoc = m.group(1)
-        laLejgende = subprocess.getoutput(f'grep "^{identDoc}." {ressources + "VI.vicorpustxt"}').replace('"', '&quot;')
-        # laLejgende = subprocess.getoutput(f'grep "^{identDoc}\." {ressources + "viCorpus.txt"}').replace('"', '&quot;')
-        
-    # clic avant
-    if avant:
-        if laPremiehre > 100: laPremiehre -= 100 
-        else: laPremiehre = 0
-        
-    # clic aprehs
-    if aprehs:
-        if laPremiehre + 200 < nombreIdents: laPremiehre += 100 
-        else: laPremiehre = nombreIdents -100
-        
-    # clic avant ou aprehs
-    if avant or aprehs:
-        identsRecherche = [int(i, 16) for i in lesIdents.split(',')]
-        viUrls = ViUrls(ressources + 'VI')
-        lesUrls = viUrls.rechercheUrls(identsRecherche[laPremiehre:laPremiehre+100])
-        laLejgende = ''
-        
+    # si recherche sur descripteur, la premiehre est l'image actuelle
+    if rechercherDesc:
+        if identImage in identsRecherche: laPremiehre = identsRecherche.index(identImage)
+        else: laLejgende = ''       # cas d'erreur
+                
+    # les urls des vignettes sont recalculejes ah chaque fois
+    nbVignettes = min(nombreIdents, MAX_VIGN)
+    identsVignettes = [int(i, 16) for i in lesIdents.split(',')[laPremiehre:laPremiehre+nbVignettes]]
+    viUrls = ViUrls(ressources + 'VI')
+    lesUrls1 = viUrls.rechercheUrls(identsVignettes)
+    manque = nbVignettes - len(identsVignettes)
+    if manque > 0:
+        identsVignettes = [int(i, 16) for i in lesIdents.split(',')[0:manque]]
+        lesUrls2 = viUrls.rechercheUrls(identsVignettes)
+    else:
+        lesUrls2 = []
+
     # la trace
     if premiehreFois or rechercher:
         fichierTrace = path.join(path.dirname(path.realpath(__file__)), '..', 'ressources/traces.csv')
@@ -155,7 +187,6 @@ try:
         nombreMots = len(texteRecherchej.split())
         with open(fichierTrace, 'a') as trace:
             trace.write(f'{timbreDeTemps} | {adrIp} | {port} | {agent} | {nombreMots} | {nombreIdents}\n')
-
 
     # l'en-teste
     print("""
@@ -183,7 +214,9 @@ try:
         #af3 {margin-top: 20px; margin-bottom: 20px; margin-right: 100px; margin-left: 50px; background-color: White; }
         button {padding: 0; border: none; background: none;}
         .td1 { padding: 15px; font-size: 120%; }
+        .td2 { padding-top: 100px; vertical-align:top }
         .fgris { background-color: Lavender;}
+        .eclaire { border: 4px solid red; box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); background-color: #ffebee; }
         </style>
         </head>
         """)
@@ -224,13 +257,14 @@ try:
         <input type="submit" name="modedEmploi" value="mode d'emploi" style="font-size: 10pt"/>
         """)
     if modedEmploi:
-        if mparny:
+        if affichFiltrej:
             print("""
                 <i>Pour masquer ce mode d'emploi, cliquez sur le bouton <b>mode d'emploi</b>.</i>
                 <br/><u>Les vieilles images ne sont pas toutes publiques, loin de là</u>. Pour les voir toutes, il faut une clef et une
                 serrure (un mot de passe et l'endroit où le mettre)... C'est pas gagné. Vous pouvez quand
                 mesme demander à ivo@latejcon.art... Mais Ivo a mauvais caractehre, il faut estre diplomate...
                 <br/>Mais, comme consolation, comme compensation, comme apaisement, vous pouvez chercher dans les images libres de l'Atejcon...
+                <br/>Cliquez sur une vignette pour voir l'image et sa lejgende et ejventuellement sur les flehches pour accéder aux images suivantes ou prejcejdents.
                 """)
         else:
             print("""
@@ -239,8 +273,7 @@ try:
                 <br/>Attention, l'indexation et l'analyse du texte de recherche sont sommaires.
                 Il n'y a pas d'analyse syntaxique ni mesme morphologique. 
                 Aussi, si rien n'est trouvé, ça ne signifie pas obligatoirement qu'il n'y a rien à trouver, juste qu'il faut chercher diffejremment.  
-                <br/><b>Faites simple</b>. Cherchez des noms propres, des mots clefs ou des dates (anneje ou mois + anneje), ne faistes pas de phrases, essayez et rejessayez et, surtout, faites simple et ne faistes pas de phrases.
-                Si vous cherchez plusieurs mots (ex "Karl Marx rigolo"), les mots inconnus du systehme sont ignorejs ("rigolo") et seules les images qui ont tous les autres mots apparaistront (les images qui ont à la fois "Karl" et "Marx). 
+                <br/><b>Faites simple</b>. Cherchez des noms propres, des mots clefs ou des dates (année, mois+année, jour+mois+année), ne faistes pas de phrases, essayez et rejessayez et, surtout, faites simple et ne faistes pas de phrases.
                 <br/>Cliquez sur une vignette pour voir l'image et sa lejgende et ejventuellement sur les flehches pour accéder aux images suivantes ou prejcejdents.
                 """)
             
@@ -248,14 +281,17 @@ try:
 
     # l'image et la lejgende
     if laLejgende:
-        m = re.match("[0-9]*;(.*)", lesUrls[0])
+        m = re.match("[0-9]*;(.*)", lesUrls1[0])
         image = m.group(1)
         m = re.match("(.*)¦(.*)(©.*)", laLejgende)
         dejbut = m.group(1)
         descripteurs = m.group(2)
         copyright = m.group(3)
         print(f"""
-            <table><tr><td>
+            <table><tr><td class="td2">
+            <input type="submit" name="imagePrejcejd" value="&#11013;&#65039;" style="font-size: 24pt"/><br/><br/><br/>
+            <input type="submit" name="imageSuivante" value="&#10145;&#65039;" style="font-size: 24pt"/>
+            </td><td>
             <img src="../400x400/{image}" alt="../400x400/{image}"/>
             </td><td class="td1">{dejbut}
             <br/><font class="fgris">{descripteurs}</font> 
@@ -265,22 +301,28 @@ try:
             """)
     
     # les vignettes
-    if laPremiehre != 0:
+    if nombreIdents > MAX_VIGN:
         print(f"""
             <input type="image" name="avant" 
             src="../vignettes/avant.jpeg" alt="../vignettes/avant.jpeg"/>
             """)
     compt = 0
-    for url in lesUrls:
+    for url in lesUrls1:
         # 109400141;1608/10940-141.jpg
         m = re.match("[0-9]*;(.*)", url)
         vignette = m.group(1)
-        print(f"""
-            <input type="image" name="IMG{compt}" 
-            src="../vignettes/{vignette}" alt="../vignettes/{vignette}"/>
-            """) 
+        print(f'<input type="image" name="IMG{compt}" src="../vignettes/{vignette}" alt="../vignettes/{vignette}"/>')
         compt +=1
-    if laPremiehre + LIMIT < nombreIdents:
+    if len(lesUrls2) > 0:
+        print('<img src="../vignettes/blanc.jpeg" alt="../vignettes/blanc.jpeg"/>')
+    for url in lesUrls2:
+        # 109400141;1608/10940-141.jpg
+        m = re.match("[0-9]*;(.*)", url)
+        vignette = m.group(1)
+        print(f'<input type="image" name="IMG{compt}" src="../vignettes/{vignette}" alt="../vignettes/{vignette}"/>')
+        compt +=1
+    
+    if nombreIdents > MAX_VIGN:
         print(f"""
             <input type="image" name="aprehs" 
             src="../vignettes/aprehs.jpeg" alt="../vignettes/aprehs.jpeg"/>
@@ -288,11 +330,8 @@ try:
             
     # passage de l'ejtat
     if not modedEmploi: print('<input type="hidden" name="sansModedEmploi" value="1"/>')
-    #if modedEmploi: print('<input type="hidden" name="avecModedEmploi" value="1"/>')
+    if laLejgende: print('<input type="hidden" name="avecLejgende" value="1"/>')
     if texteRecherchej: print(f'<input type="hidden" name="svtexteRecherchej" value="{texteRecherchej}"/>')
-    print(f'<input type="hidden" name="laLejgende" value="{laLejgende}"/>')
-    svLesUrls = ','.join(lesUrls)
-    print(f'<input type="hidden" name="lesUrls" value="{svLesUrls}"/>')
     print(f'<input type="hidden" name="latejcon" value="{latejcon}"/>')
     print(f'<input type="hidden" name="lesIdents" value="{lesIdents}"/>')
     print(f'<input type="hidden" name="laPremiehre" value="{laPremiehre}"/>')
