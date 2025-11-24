@@ -186,7 +186,7 @@ try:
         else: environ = ''
         nombreMots = len(texteRecherchej.split())
         with open(fichierTrace, 'a') as trace:
-            trace.write(f'{timbreDeTemps} | {adrIp} | {port} | {agent} | {nombreMots} | {nombreIdents}\n')
+            trace.write(f'{timbreDeTemps} | {adrIp} | {port} | {agent} | {nombreMots} | {nombreIdents}/{nombreIdentsNf}\n')
 
     # l'en-teste
     print("""
