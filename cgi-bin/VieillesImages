@@ -73,6 +73,7 @@ try:
     # svLesUrls = form.getvalue('lesUrls') or ''
     lesIdents = form.getvalue('lesIdents') or ''
     nombreIdentsNf = form.getvalue('nombreIdentsNf') or ''
+    nombreIdentsF = form.getvalue('nombreIdentsF') or ''
     svLaPremiehre = form.getvalue('laPremiehre') or '0'
     laPremiehre = int(svLaPremiehre)
     # taillesEjcran = form.getvalue('taillesEjcran') or ''
@@ -82,10 +83,12 @@ try:
     premiehreFois = not latejcon
     # if svLesUrls == '': lesUrls = []
     # else: lesUrls = svLesUrls.split(',')
-    if lesIdents == '': nombreIdents = 0
-    else: nombreIdents = len(lesIdents.split(','))
+    if lesIdents: nombreIdents = len(lesIdents.split(','))
+    else: nombreIdents = 0
     if nombreIdentsNf: nombreIdentsNf = int(nombreIdentsNf)
     else: nombreIdentsNf = 0
+    if nombreIdentsF: nombreIdentsF = int(nombreIdentsF)
+    else: nombreIdentsF = 0
 
     # premiehre fois et filtrage
     if premiehreFois:
@@ -155,8 +158,9 @@ try:
         if affichFiltrej:
             identsRecherche = [ident for ident in identsRecherche if MIN_FILTRE <= ident <= MAX_FILTRE]
         # les idents et les URLs
-        nombreIdents = len(identsRecherche)
+        nombreIdentsF = len(identsRecherche)
         lesIdents = ','.join(["%x"%i for i in identsRecherche[:MAX_MEM]])
+        nombreIdents = len(lesIdents.split(','))
         # la premiehre en teste
         laPremiehre = 0
 
@@ -240,9 +244,9 @@ try:
         """)
     if texteRecherchej:
         textef=''
-        if nombreIdents != nombreIdentsNf: 
-            textef += f'<mil> (dont {nombreIdents} publiques)</mi1>'
-        if nombreIdents > 1000: 
+        if nombreIdentsF != nombreIdentsNf: 
+            textef += f'<mil> (dont {nombreIdentsF} publiques)</mi1>'
+        if nombreIdentsF > MAX_MEM: 
             textef += f'<mil> (dont {MAX_MEM} prises en compte)</mi1>'
         if nombreIdentsNf == 0: 
             print('<mil>Rien trouvé, dejsolé.</mi1>')
@@ -341,6 +345,7 @@ try:
     print(f'<input type="hidden" name="lesIdents" value="{lesIdents}"/>')
     print(f'<input type="hidden" name="laPremiehre" value="{laPremiehre}"/>')
     print(f'<input type="hidden" name="nombreIdentsNf" value="{nombreIdentsNf}"/>')
+    print(f'<input type="hidden" name="nombreIdentsF" value="{nombreIdentsF}"/>')
     # print('<input type="hidden" name="taillesEjcran" value=""/>')
     # print("""
     #     <script>
