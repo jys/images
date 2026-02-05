@@ -16,6 +16,7 @@ from ViRecherche import ViRecherche
 from ViUrls import ViUrls
 
 MAX_VIGN=100
+MAX_MEM=1000
 # plage de numejrotation des images libres
 MIN_FILTRE=27500101
 MAX_FILTRE=27570137
@@ -74,6 +75,8 @@ try:
     nombreIdentsNf = form.getvalue('nombreIdentsNf') or ''
     svLaPremiehre = form.getvalue('laPremiehre') or '0'
     laPremiehre = int(svLaPremiehre)
+    # taillesEjcran = form.getvalue('taillesEjcran') or ''
+    # print("taillesEjcran=", taillesEjcran)
 
     # calculs subsejquents immejdiats
     premiehreFois = not latejcon
@@ -153,7 +156,7 @@ try:
             identsRecherche = [ident for ident in identsRecherche if MIN_FILTRE <= ident <= MAX_FILTRE]
         # les idents et les URLs
         nombreIdents = len(identsRecherche)
-        lesIdents = ','.join(["%x"%i for i in identsRecherche])
+        lesIdents = ','.join(["%x"%i for i in identsRecherche[:MAX_MEM]])
         # la premiehre en teste
         laPremiehre = 0
 
@@ -236,15 +239,17 @@ try:
         <input type="submit" name="ça" value="&#x1F50D;" style="font-size: 16pt"/>&nbsp;&nbsp;&nbsp;&nbsp;
         """)
     if texteRecherchej:
+        textef=''
         if nombreIdents != nombreIdentsNf: 
-            textef = f'<mil> (dont {nombreIdents} publiques).</mi1>'
-        else: textef = '.'
+            textef += f'<mil> (dont {nombreIdents} publiques)</mi1>'
+        if nombreIdents > 1000: 
+            textef += f'<mil> (dont {MAX_MEM} prises en compte)</mi1>'
         if nombreIdentsNf == 0: 
             print('<mil>Rien trouvé, dejsolé.</mi1>')
         elif nombreIdentsNf == 1:
             print('<mil>Une seule image trouveje</mi1>' + textef)
         else: 
-            print(f'<mil>{nombreIdentsNf} images trouvejes</mi1>' + textef)
+            print(f'<mil>{nombreIdentsNf} images trouvejes</mi1>' + textef +'.')
             
     print("""
         </p> 
@@ -336,7 +341,17 @@ try:
     print(f'<input type="hidden" name="lesIdents" value="{lesIdents}"/>')
     print(f'<input type="hidden" name="laPremiehre" value="{laPremiehre}"/>')
     print(f'<input type="hidden" name="nombreIdentsNf" value="{nombreIdentsNf}"/>')
-
+    # print('<input type="hidden" name="taillesEjcran" value=""/>')
+    # print("""
+    #     <script>
+    #         var w1 = window.innerWidth;
+    #         var h1 = window.innerHeight;
+    #         var w2 = window.screen.width;
+    #         var h2 = window.screen.height;
+    #         var x = document.getElementById("taillesEjcran");
+    #         x.innerHTML = w1+"/"+h1+"/"+w2+"/"+h2;
+    #     </script>
+    #     """)
     print('</form></body></html>')
     
 except Exception:
