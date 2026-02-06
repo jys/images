@@ -70,8 +70,7 @@ try:
     latejcon = form.getvalue('latejcon')
     if rechercher: texteRecherchej = form.getvalue('texteRecherchej') or ''
     else: texteRecherchej = form.getvalue('svtexteRecherchej') or ''
-    # svLesUrls = form.getvalue('lesUrls') or ''
-    lesIdents = form.getvalue('lesIdents') or ''
+    lesIdentsHexa = form.getvalue('lesIdentsHexa') or ''
     nombreIdentsNf = form.getvalue('nombreIdentsNf') or ''
     nombreIdentsF = form.getvalue('nombreIdentsF') or ''
     svLaPremiehre = form.getvalue('laPremiehre') or '0'
@@ -81,10 +80,9 @@ try:
 
     # calculs subsejquents immejdiats
     premiehreFois = not latejcon
-    # if svLesUrls == '': lesUrls = []
-    # else: lesUrls = svLesUrls.split(',')
-    if lesIdents: nombreIdents = len(lesIdents.split(','))
-    else: nombreIdents = 0
+    if lesIdentsHexa == '': lesIdents = []
+    else: lesIdents = [int(i, 16) for i in lesIdentsHexa.split(',')]
+    nombreIdents = len(lesIdents)
     if nombreIdentsNf: nombreIdentsNf = int(nombreIdentsNf)
     else: nombreIdentsNf = 0
     if nombreIdentsF: nombreIdentsF = int(nombreIdentsF)
@@ -136,7 +134,7 @@ try:
     # lecture de la nouvelle notice
     if clicImage or rechercherDesc or imageSuivante or imagePrejcejd or (clicModeEmploi and avecLejgende):
         # trouve identifiant de l'image
-        identImage = int(lesIdents.split(',')[laPremiehre], 16)
+        identImage = lesIdents[laPremiehre]
         laLejgende = subprocess.getoutput(f'grep "^{identImage}." {ressources + "VI.vicorpustxt"}').replace('"', '&quot;')
     else:
         laLejgende = ''
@@ -159,8 +157,8 @@ try:
             identsRecherche = [ident for ident in identsRecherche if MIN_FILTRE <= ident <= MAX_FILTRE]
         # les idents et les URLs
         nombreIdentsF = len(identsRecherche)
-        lesIdents = ','.join(["%x"%i for i in identsRecherche[:MAX_MEM]])
-        nombreIdents = len(lesIdents.split(','))
+        lesIdents = identsRecherche[:MAX_MEM]
+        nombreIdents = len(lesIdents)
         # la premiehre en teste
         laPremiehre = 0
 
@@ -171,15 +169,13 @@ try:
                 
     # les urls des vignettes sont recalculejes ah chaque fois
     nbVignettes = min(nombreIdents, MAX_VIGN)
-    identsVignettes = [int(i, 16) for i in lesIdents.split(',')[laPremiehre:laPremiehre+nbVignettes]]
     viUrls = ViUrls(ressources + 'VI')
-    lesUrls1 = viUrls.rechercheUrls(identsVignettes)
-    manque = nbVignettes - len(identsVignettes)
-    if manque > 0:
-        identsVignettes = [int(i, 16) for i in lesIdents.split(',')[0:manque]]
-        lesUrls2 = viUrls.rechercheUrls(identsVignettes)
-    else:
-        lesUrls2 = []
+    lesUrls1 = viUrls.rechercheUrls(lesIdents[laPremiehre:laPremiehre+nbVignettes])
+    manque = nbVignettes - len(lesUrls1)
+    if manque > 0: lesUrls2 = viUrls.rechercheUrls(lesIdents[0:manque])
+    else: lesUrls2 = []
+    # les identifiants d'images sont sauvegardejs en hexa 
+    lesIdentsHexa = ','.join(["%x"%i for i in lesIdents])
 
     # la trace
     if premiehreFois or rechercher:
@@ -247,7 +243,7 @@ try:
         if nombreIdentsF != nombreIdentsNf: 
             textef += f'<mil> (dont {nombreIdentsF} publiques)</mi1>'
         if nombreIdentsF > MAX_MEM: 
-            textef += f'<mil> (dont {MAX_MEM} prises en compte)</mi1>'
+            textef += f'<mil> ({MAX_MEM} prises en compte)</mi1>'
         if nombreIdentsNf == 0: 
             print('<mil>Rien trouvé, dejsolé.</mi1>')
         elif nombreIdentsNf == 1:
@@ -342,7 +338,7 @@ try:
     if laLejgende: print('<input type="hidden" name="avecLejgende" value="1"/>')
     if texteRecherchej: print(f'<input type="hidden" name="svtexteRecherchej" value="{texteRecherchej}"/>')
     print(f'<input type="hidden" name="latejcon" value="{latejcon}"/>')
-    print(f'<input type="hidden" name="lesIdents" value="{lesIdents}"/>')
+    print(f'<input type="hidden" name="lesIdentsHexa" value="{lesIdentsHexa}"/>')
     print(f'<input type="hidden" name="laPremiehre" value="{laPremiehre}"/>')
     print(f'<input type="hidden" name="nombreIdentsNf" value="{nombreIdentsNf}"/>')
     print(f'<input type="hidden" name="nombreIdentsF" value="{nombreIdentsF}"/>')
